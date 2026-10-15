@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MN Studio — Visual Demo</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --ink:#232338; --muted:#8b8ba6; --faint:#b9b9d4;
+    --card:#ffffff; --line:#e6e8f7;
+    --bubble:linear-gradient(135deg,#7c5cf0 0%,#3f7ded 100%);
+    --send:linear-gradient(135deg,#5b8def,#3f6fe8);
+    --green:#22b573;
+  }
+  html,body{ height:100%; }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Inter,Roboto,sans-serif;
+    color:var(--ink); overflow:hidden;
+    background:
+      radial-gradient(1100px 750px at 8% -5%, #bfe0ff 0%, rgba(191,224,255,0) 60%),
+      radial-gradient(1000px 700px at 88% 5%, #d9c2ff 0%, rgba(217,194,255,0) 55%),
+      radial-gradient(900px 850px at 95% 95%, #b9f4cf 0%, rgba(185,244,207,0) 55%),
+      radial-gradient(1000px 800px at -5% 100%, #ffd7e7 0%, rgba(255,215,231,0) 55%),
+      linear-gradient(180deg,#e9f1ff 0%,#f4edff 50%,#eef7ee 100%);
+  }
+  .blob{ position:fixed; border-radius:50%; filter:blur(90px); opacity:.5; z-index:0; pointer-events:none; animation:drift 18s ease-in-out infinite alternate; }
+  .blob.b1{ width:420px;height:420px; left:-120px; top:8%; background:#a8d4ff; }
+  .blob.b2{ width:380px;height:380px; right:-100px; top:22%; background:#d3b8ff; animation-delay:-6s; }
+  .blob.b3{ width:460px;height:460px; right:6%; bottom:-160px; background:#b8f2c9; animation-delay:-12s; }
+  @keyframes drift{ from{ transform:translate(0,0) scale(1);} to{ transform:translate(60px,-40px) scale(1.12);} }
+
+  /* ============ Desktop window (the rounded rectangle) ============ */
+  .desktop{ position:relative; z-index:1; height:100vh; display:flex; align-items:center; justify-content:center; padding:30px; }
+  .window{
+    width:min(1560px,100%); height:100%;
+    background:rgba(255,255,255,.52);
+    backdrop-filter:blur(32px) saturate(1.3); -webkit-backdrop-filter:blur(32px) saturate(1.3);
+    border:1px solid rgba(255,255,255,.75); border-radius:26px;
+    box-shadow:0 50px 130px rgba(88,76,180,.28), 0 4px 18px rgba(88,76,180,.12);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .titlebar{
+    height:48px; flex:0 0 48px; display:flex; align-items:center; padding:0 18px;
+    background:rgba(255,255,255,.38); border-bottom:1px solid rgba(255,255,255,.6);
+    position:relative; user-select:none;
+  }
+  .lights{ display:flex; gap:8px; }
+  .lights span{ width:12px; height:12px; border-radius:50%; box-shadow:inset 0 0 2px rgba(0,0,0,.15); }
+  .lights .r{ background:#ff5f57; } .lights .y{ background:#febc2e; } .lights .g{ background:#28c840; }
+  .wintitle{ position:absolute; left:50%; transform:translateX(-50%); font-size:13.5px; font-weight:650; letter-spacing:.2px; color:#3c3c58; display:flex; align-items:center; gap:8px; }
+  .demopill{ font-size:10px; font-weight:700; letter-spacing:1.2px; color:#7c5cf0; background:rgba(124,92,240,.12); border:1px solid rgba(124,92,240,.3); padding:3px 9px; border-radius:999px; }
+
+  .app{ flex:1; display:flex; min-height:0; }
+
+  /* ============ Sidebar ============ */
+  .sidebar{
+    width:288px; flex:0 0 288px; background:rgba(240,242,255,.55);
+    border-right:1px solid rgba(255,255,255,.65);
+    padding:20px 14px 14px; display:flex; flex-direction:column; gap:4px; overflow-y:auto;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; padding:2px 10px 16px; font-size:17px; font-weight:700; }
+  .orb-mini{ width:24px; height:24px; border-radius:50%; flex:0 0 24px;
+    background:radial-gradient(circle at 32% 30%, #ffd9f4 0%, #f0a6e8 32%, #a78bfa 62%, #5b8def 100%);
+    box-shadow:0 2px 8px rgba(150,110,240,.5), inset -2px -3px 6px rgba(90,60,200,.25); }
+  .newchat{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:#fff; border:1px solid rgba(230,232,247,.9); border-radius:14px;
+    padding:11px; font-size:14px; font-weight:600; color:#3c3c58; cursor:pointer;
+    box-shadow:0 3px 12px rgba(120,110,200,.10); transition:.15s; margin-bottom:10px; width:100%;
+  }
+  .newchat:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(120,110,200,.16); }
+  .nav{ display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:12px; font-size:14px; color:#4b4b66; cursor:pointer; border:none; background:none; width:100%; text-align:left; }
+  .nav:hover{ background:rgba(255,255,255,.65); }
+  .nav.active{ background:rgba(255,255,255,.85); font-weight:600; color:#232338; }
+  .nav svg{ width:18px; height:18px; flex:0 0 18px; stroke:#6d6d8c; }
+  .nav .tag{ margin-left:auto; font-size:10px; font-weight:700; color:#7c5cf0; background:rgba(124,92,240,.12); padding:2px 8px; border-radius:999px; }
+  .sect{ display:flex; align-items:center; justify-content:space-between; padding:16px 12px 6px; font-size:13px; color:var(--muted); font-weight:600; }
+  .sect button{ border:none; background:none; font-size:18px; color:var(--muted); cursor:pointer; line-height:1; }
+  .folder{ display:flex; align-items:center; gap:10px; padding:8px 12px; font-size:14px; font-weight:600; color:#3c3c58; }
+  .folder svg{ width:16px; height:16px; }
+  .sub{ display:block; padding:7px 12px 7px 38px; font-size:13px; color:#6d6d8c; cursor:pointer; border-radius:10px; border:none; background:none; width:100%; text-align:left; }
+  .sub:hover{ background:rgba(255,255,255,.65); color:#232338; }
+  .spacer{ flex:1; }
+  .profile{ position:relative; }
+  .profilecard{
+    display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.72);
+    border:1px solid rgba(230,232,247,.9); border-radius:16px; padding:10px 12px; cursor:pointer; width:100%;
+  }
+  .avatar{ width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#ffa53d,#ff7a1a); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:16px; flex:0 0 36px; }
+  .pinfo{ flex:1; text-align:left; } .pinfo .n{ font-size:14px; font-weight:650; } .pinfo .p{ font-size:11.5px; color:var(--muted); }
+  .profilecard svg{ width:14px; height:14px; stroke:var(--muted); }
+  .popover{
+    position:absolute; bottom:calc(100% + 10px); left:0; right:0; background:#fff; border-radius:18px;
+    box-shadow:0 18px 50px rgba(80,70,160,.22); border:1px solid var(--line); padding:8px; display:none; z-index:50;
+  }
+  .popover.open{ display:block; animation:pop .16s ease; }
+  @keyframes pop{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:none;} }
+  .popitem{ display:flex; align-items:center; gap:12px; width:100%; padding:10px 12px; border:none; background:none; border-radius:12px; font-size:14px; color:#3c3c58; cursor:pointer; text-align:left; }
+  .popitem:hover{ background:#f4f5fd; }
+  .popitem svg{ width:17px; height:17px; stroke:#6d6d8c; }
+  .popitem.danger{ color:#e5484d; } .popitem.danger svg{ stroke:#e5484d; }
+  .popdiv{ height:1px; background:var(--line); margin:6px 4px; }
+  .popitem .chev{ margin-left:auto; }
+
+  /* ============ Main ============ */
+  .main{ flex:1; display:flex; flex-direction:column; min-width:0; background:rgba(255,255,255,.30); }
+  .topbar{ height:62px; flex:0 0 62px; display:flex; align-items:center; padding:0 26px; position:relative; }
+  .modelpick{ display:flex; align-items:center; gap:6px; font-size:14px; font-weight:600; cursor:pointer; border:none; background:none; color:#3c3c58; padding:8px 10px; border-radius:10px; }
+  .modelpick:hover{ background:rgba(255,255,255,.6); }
+  .modelmenu{ position:absolute; top:56px; left:18px; background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 18px 50px rgba(80,70,160,.2); padding:8px; min-width:250px; display:none; z-index:60; }
+  .modelmenu.open{ display:block; animation:pop .16s ease; }
+  .modelmenu .mh{ font-size:11px; font-weight:700; letter-spacing:1px; color:var(--muted); padding:8px 12px 4px; }
+  .topright{ margin-left:auto; display:flex; gap:10px; align-items:center; }
+  .sharebtn{ display:flex; align-items:center; gap:7px; background:rgba(255,255,255,.8); border:1px solid var(--line); border-radius:999px; padding:8px 16px; font-size:13px; font-weight:600; color:#3c3c58; cursor:pointer; }
+  .sharebtn:hover{ background:#fff; }
+  .iconbtn{ width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.8); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .iconbtn:hover{ background:#fff; }
+  .iconbtn svg, .sharebtn svg{ width:15px; height:15px; stroke:#5a5a76; }
+
+  .views{ flex:1; min-height:0; overflow-y:auto; position:relative; }
+  .view{ display:none; } .view.on{ display:block; animation:fadein .25s ease; }
+  @keyframes fadein{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+
+  /* ---- Home ---- */
+  .home{ max-width:880px; margin:0 auto; padding:40px 32px 60px; text-align:center; }
+  .orb{ width:96px; height:96px; border-radius:50%; margin:6px auto 26px;
+    background:radial-gradient(circle at 32% 28%, #ffe3f6 0%, #f2a9e6 30%, #a78bfa 60%, #5b8def 88%, #3f6fe8 100%);
+    box-shadow:0 14px 44px rgba(150,110,240,.45), inset -8px -12px 26px rgba(90,60,200,.28), inset 6px 8px 18px rgba(255,255,255,.5);
+    animation:float 5s ease-in-out infinite; }
+  @keyframes float{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-9px);} }
+  .home h1{ font-size:31px; font-weight:700; letter-spacing:-.3px; }
+  .home .sub{ font-size:16px; color:var(--muted); margin-top:8px; }
+  .composer{ background:#fff; border-radius:20px; box-shadow:0 10px 34px rgba(120,110,200,.13); border:1px solid rgba(230,232,247,.8); padding:16px 18px 12px; margin-top:30px; text-align:left; }
+  .composer textarea{ width:100%; border:none; outline:none; resize:none; font-size:15px; font-family:inherit; color:var(--ink); background:none; min-height:26px; }
+  .composer textarea::placeholder{ color:#a5a5c2; }
+  .ctools{ display:flex; align-items:center; gap:6px; margin-top:10px; }
+  .ctool{ width:34px; height:34px; border-radius:50%; border:none; background:none; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .ctool:hover{ background:#f2f3fc; }
+  .ctool svg{ width:17px; height:17px; stroke:#6d6d8c; }
+  .datasrc{ display:flex; align-items:center; gap:7px; background:#eef1fe; border:none; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; color:#4b4b66; cursor:pointer; margin-left:4px; }
+  .datasrc svg{ width:15px; height:15px; stroke:#6d6d8c; }
+  .sendbtn{ margin-left:auto; width:42px; height:42px; border-radius:50%; border:none; cursor:pointer; background:var(--send); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(63,111,232,.4); transition:.15s; }
+  .sendbtn:hover{ transform:scale(1.06); }
+  .sendbtn svg{ width:18px; height:18px; stroke:#fff; }
+  .chips{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+  .chip{ display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.75); border:1px solid var(--line); border-radius:999px; padding:9px 16px; font-size:13px; font-weight:550; color:#4b4b66; cursor:pointer; }
+  .chip:hover{ background:#fff; box-shadow:0 4px 14px rgba(120,110,200,.12); }
+  .chip svg{ width:14px; height:14px; stroke:#7c5cf0; }
+  .recent{ text-align:left; margin-top:44px; }
+  .recent h3{ font-size:14px; font-weight:600; color:#4b4b66; margin-bottom:14px; }
+  .rcards{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .rcard{ background:rgba(255,255,255,.85); border:1px solid rgba(230,232,247,.8); border-radius:16px; padding:16px; cursor:pointer; transition:.15s; }
+  .rcard:hover{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(120,110,200,.14); }
+  .rcard .t{ font-size:14px; font-weight:650; margin-bottom:6px; }
+  .rcard .s{ font-size:12px; color:var(--muted); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .rcard .d{ font-size:11px; color:var(--faint); margin-top:10px; }
+
+  /* ---- Chat ---- */
+  .chat{ max-width:900px; margin:0 auto; padding:26px 32px 30px; }
+  .msg{ margin-bottom:26px; }
+  .urow{ display:flex; justify-content:flex-end; }
+  .ubub{ background:var(--bubble); color:#fff; padding:12px 20px; border-radius:20px 20px 6px 20px; font-size:14.5px; max-width:72%; line-height:1.55; box-shadow:0 6px 18px rgba(124,92,240,.28); position:relative; }
+  .ubub::after{ content:""; position:absolute; right:-4px; bottom:6px; width:9px; height:9px; border-radius:50%; background:#3f7ded; }
+  .attrow{ display:flex; gap:10px; justify-content:flex-end; margin-bottom:10px; }
+  .thumb{ width:118px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px; box-shadow:0 4px 12px rgba(120,110,200,.1); }
+  .thumb .codefake{ height:64px; border-radius:8px; background:
+      repeating-linear-gradient(180deg, transparent 0 9px, rgba(124,92,240,.18) 9px 13px, transparent 13px 20px),
+      repeating-linear-gradient(90deg, rgba(90,120,220,.25) 0 34px, transparent 34px 44px, rgba(240,166,232,.25) 44px 70px, transparent 70px 82px),
+      #f6f7fe; }
+  .thumb .fl{ font-size:10.5px; color:var(--muted); margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .airow{ display:flex; gap:12px; }
+  .airow .orb-mini{ width:30px; height:30px; flex:0 0 30px; margin-top:2px; }
+  .aibody{ flex:1; min-width:0; font-size:14.5px; line-height:1.7; color:#33334e; }
+  .aibody p{ margin-bottom:12px; }
+  .metrics{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:16px 0 18px; }
+  .metric{ background:#fff; border:1px solid rgba(230,232,247,.9); border-radius:16px; padding:16px; box-shadow:0 4px 14px rgba(120,110,200,.07); }
+  .metric .l{ font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .metric .vrow{ display:flex; align-items:baseline; justify-content:space-between; }
+  .metric .v{ font-size:23px; font-weight:700; letter-spacing:-.4px; }
+  .metric .d{ font-size:12px; font-weight:650; color:var(--green); }
+  .hr{ height:1px; background:#dfe2f5; margin:20px 0; }
+  .actions{ display:flex; gap:4px; margin-top:12px; }
+  .actions button{ border:none; background:none; width:32px; height:32px; border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .actions button:hover{ background:rgba(255,255,255,.8); }
+  .actions svg{ width:16px; height:16px; stroke:#9a9ab8; }
+  .waitrow{ display:flex; align-items:center; gap:12px; }
+  .spin{ width:20px; height:20px; animation:rot 1.1s linear infinite; }
+  @keyframes rot{ to{ transform:rotate(360deg);} }
+  .filechip{ display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:0 4px 14px rgba(120,110,200,.08); max-width:460px; }
+  .fileic{ width:42px; height:42px; border-radius:12px; background:#eef1fe; display:flex; align-items:center; justify-content:center; flex:0 0 42px; }
+  .fileic svg{ width:20px; height:20px; stroke:#5b8def; }
+  .filemeta{ flex:1; } .filemeta .fn{ font-size:14px; font-weight:650; } .filemeta .fs{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .dlbtn{ background:var(--send); color:#fff; border:none; border-radius:999px; padding:9px 18px; font-size:13px; font-weight:650; cursor:pointer; }
+  .suggbar{ display:flex; align-items:center; gap:10px; margin:26px 0 6px; flex-wrap:wrap; }
+  .suggbar .sl{ display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); font-weight:600; }
+  .suggbar .sl svg{ width:14px; height:14px; stroke:#7c5cf0; }
+  .sugg{ background:#e4ecff; border:none; border-radius:999px; padding:8px 15px; font-size:12.5px; font-weight:550; color:#4b5a86; cursor:pointer; }
+  .sugg:hover{ background:#d6e2ff; }
+  .codecard{ background:#1e1e30; border-radius:16px; overflow:hidden; margin-top:6px; box-shadow:0 10px 30px rgba(30,30,60,.25); }
+  .codehead{ display:flex; align-items:center; padding:10px 16px; background:rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.08); }
+  .codehead .fn{ font-size:12.5px; color:#c9c9e4; font-weight:600; font-family:ui-monospace,Menlo,monospace; }
+  .copybtn{ margin-left:auto; background:rgba(255,255,255,.1); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; display:flex; gap:6px; align-items:center; }
+  .copybtn:hover{ background:rgba(255,255,255,.18); }
+  .codecard pre{ padding:16px 18px; overflow-x:auto; }
+  .codecard code{ font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; line-height:1.7; color:#d5d5f2; }
+  .typing{ display:inline-flex; gap:5px; padding:14px 4px; }
+  .typing span{ width:8px; height:8px; border-radius:50%; background:#a5a5c2; animation:blink 1.2s infinite; }
+  .typing span:nth-child(2){ animation-delay:.2s; } .typing span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,60%,100%{ opacity:.25; transform:none;} 30%{ opacity:1; transform:translateY(-4px);} }
+  .chatcomposer{ position:sticky; bottom:0; padding:14px 0 6px; background:linear-gradient(180deg, rgba(255,255,255,0), rgba(244,245,255,.9) 40%); }
+
+  /* ---- Models ---- */
+  .models{ max-width:760px; margin:0 auto; padding:44px 32px 60px; }
+  .models h2{ font-size:24px; font-weight:700; }
+  .models .msub{ color:var(--muted); font-size:14.5px; margin:8px 0 26px; line-height:1.6; }
+  .drop{ border:2px dashed #b9c2f5; border-radius:22px; background:rgba(255,255,255,.6); padding:52px 30px; text-align:center; cursor:pointer; transition:.18s; }
+  .drop:hover, .drop.over{ border-color:#7c5cf0; background:rgba(255,255,255,.9); transform:scale(1.01); }
+  .drop svg{ width:44px; height:44px; stroke:#7c5cf0; margin-bottom:14px; }
+  .drop .dt{ font-size:16px; font-weight:650; }
+  .drop .ds{ font-size:13px; color:var(--muted); margin-top:8px; line-height:1.6; }
+  .drop .browse{ display:inline-block; margin-top:16px; background:var(--send); color:#fff; font-size:13.5px; font-weight:650; border-radius:999px; padding:10px 24px; }
+  .loadwrap{ background:#fff; border:1px solid var(--line); border-radius:20px; padding:28px; box-shadow:0 10px 30px rgba(120,110,200,.1); }
+  .loadwrap .lt{ font-size:15px; font-weight:650; margin-bottom:6px; }
+  .loadwrap .ls{ font-size:13px; color:var(--muted); margin-bottom:18px; }
+  .pbar{ height:10px; background:#eef0fb; border-radius:999px; overflow:hidden; }
+  .pbar i{ display:block; height:100%; width:0; border-radius:999px; background:linear-gradient(90deg,#7c5cf0,#3f7ded); transition:width .2s; }
+  .ppct{ font-size:12.5px; color:var(--muted); margin-top:10px; text-align:right; font-weight:600; }
+  .modelcard{ background:#fff; border:1px solid var(--line); border-radius:20px; padding:22px; box-shadow:0 10px 30px rgba(120,110,200,.1); }
+  .mrow{ display:flex; gap:16px; align-items:center; }
+  .cpuic{ width:52px; height:52px; border-radius:16px; background:linear-gradient(135deg,#eef1fe,#e2e7fd); display:flex; align-items:center; justify-content:center; flex:0 0 52px; }
+  .cpuic svg{ width:26px; height:26px; stroke:#5b6fd6; }
+  .mname{ font-size:16.5px; font-weight:700; word-break:break-all; }
+  .mmeta{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+  .mnote{ margin-top:16px; background:#fff8ec; border:1px solid #f3e3bd; border-radius:14px; padding:12px 16px; font-size:13px; color:#8a6d2f; line-height:1.6; }
+  .mbtns{ display:flex; gap:10px; margin-top:18px; }
+  .btnpri{ background:var(--send); color:#fff; border:none; border-radius:999px; padding:11px 26px; font-size:14px; font-weight:650; cursor:pointer; box-shadow:0 6px 16px rgba(63,111,232,.35); }
+  .btnpri:hover{ transform:translateY(-1px); }
+  .btnghost{ background:#f2f3fc; color:#4b4b66; border:none; border-radius:999px; padding:11px 26px; font-size:14px; font-weight:600; cursor:pointer; }
+  .btnghost:hover{ background:#e8eaf9; }
+  .hint{ margin-top:22px; font-size:13px; color:var(--muted); line-height:1.7; background:rgba(255,255,255,.55); border:1px solid rgba(230,232,247,.8); border-radius:16px; padding:14px 18px; }
+  .hint b{ color:#4b4b66; }
+
+  .toast{ position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(20px); background:#232338; color:#fff; font-size:13.5px; font-weight:550; padding:11px 20px; border-radius:999px; opacity:0; pointer-events:none; transition:.25s; z-index:200; box-shadow:0 10px 30px rgba(0,0,0,.25); max-width:80vw; text-align:center; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  ::-webkit-scrollbar{ width:9px; } ::-webkit-scrollbar-thumb{ background:rgba(140,140,190,.35); border-radius:99px; } ::-webkit-scrollbar-track{ background:transparent; }
+  @media (max-width:1100px){ .metrics{ grid-template-columns:repeat(2,1fr);} .rcards{ grid-template-columns:1fr 1fr;} .sidebar{ width:240px; flex-basis:240px;} }
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<div class="desktop">
+  <div class="window">
+    <!-- ======= Custom title bar (the app frame) ======= -->
+    <div class="titlebar">
+      <div class="lights"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="wintitle"><span class="orb-mini" style="width:18px;height:18px;flex-basis:18px"></span>MN Studio</div>
+      <div style="margin-left:auto"><span class="demopill">VISUAL DEMO</span></div>
+    </div>
+
+    <div class="app">
+      <!-- ======= Sidebar ======= -->
+      <aside class="sidebar">
+        <div class="brand"><span class="orb-mini"></span>MN Studio</div>
+        <button class="newchat" id="newChatBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#6d6d8c" stroke-width="1.8" width="16" height="16"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z"/></svg>
+          New chat
+        </button>
+        <button class="nav" data-demo="Search is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Search chat</button>
+        <button class="nav" data-demo="Library is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/><path d="M12 11L4 6.5M12 11l8-4.5M12 11v9"/></svg>Library</button>
+        <button class="nav" id="navModels"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9zM4 10h-2M4 14h-2M22 10h-2M22 14h-2M10 4V2M14 4V2M10 22v-2M14 22v-2"/></svg>Models<span class="tag">GGUF</span></button>
+        <button class="nav" data-demo="AI images is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg>AI images</button>
+        <button class="nav" data-demo="AI videos is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="5" width="15" height="14" rx="3"/><path d="M17 10l5-3v10l-5-3"/></svg>AI videos</button>
+        <button class="nav" data-demo="AI code is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6"/></svg>AI code</button>
+
+        <div class="sect"><span>Folders</span><button id="addFolder" title="New folder">+</button></div>
+        <div class="folder"><svg viewBox="0 0 24 24" fill="none" stroke="#f472a0" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>Branding</div>
+        <button class="sub" data-thread="demo">Professional branding</button>
+        <button class="sub" data-thread="demo">Branding guide example</button>
+        <button class="sub" data-thread="demo">Brand activation ideas</button>
+        <div class="folder" style="margin-top:4px"><svg viewBox="0 0 24 24" fill="none" stroke="#5b8def" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>Web Development</div>
+        <button class="sub" data-thread="demo">Framer code override</button>
+        <button class="sub" data-thread="demo">How to implement this code</button>
+
+        <div class="spacer"></div>
+        <div class="profile">
+          <div class="popover" id="profilePop">
+            <button class="popitem" data-demo="Settings is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.05a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>Settings</button>
+            <button class="popitem" data-demo="Language is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 5h9M8.5 3v2c0 4-2.5 7.5-5.5 9M5 9c1 3 4 6 8 7M13 21l4.5-10L22 21M14.8 17h5.4"/></svg>Language<span class="chev">›</span></button>
+            <button class="popitem" data-demo="Personalization is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg>Personalization</button>
+            <div class="popdiv"></div>
+            <button class="popitem" data-demo="Help is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.4 2.33c-.8.3-.9 1-.9 1.67M12 17h.01"/></svg>Get help</button>
+            <button class="popitem danger" data-demo="You can't log out of a demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Log out</button>
+          </div>
+          <button class="profilecard" id="profileBtn">
+            <span class="avatar">S</span>
+            <span class="pinfo"><span class="n">Sophia</span><br><span class="p">Pro Plan</span></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+      </aside>
+
+      <!-- ======= Main ======= -->
+      <div class="main">
+        <div class="topbar">
+          <button class="modelpick" id="modelPickBtn"><span id="modelPickLabel">MN Studio AI Chat</span><svg viewBox="0 0 24 24" fill="none" stroke="#8b8ba6" stroke-width="2" width="14" height="14"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="modelmenu" id="modelMenu">
+            <div class="mh">ACTIVE MODEL</div>
+            <button class="popitem" id="menuDefault"><span class="orb-mini" style="width:20px;height:20px;flex-basis:20px"></span><span id="menuModelName">MN Studio AI Chat</span></button>
+            <div class="popdiv"></div>
+            <button class="popitem" id="menuLoad"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>Load a GGUF model…</button>
+          </div>
+          <div class="topright">
+            <button class="sharebtn" id="shareBtn"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>Share</button>
+            <button class="iconbtn" data-demo="More options are visual-only in this demo."><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+          </div>
+        </div>
+
+        <div class="views" id="views">
+          <!-- ======= HOME ======= -->
+          <section class="view on" id="view-home">
+            <div class="home">
+              <div class="orb"></div>
+              <h1 id="greetTitle">Good Morning, Sophia</h1>
+              <div class="sub">How can I help you today?</div>
+              <div class="composer">
+                <textarea id="homeInput" rows="1" placeholder="Ask anything..."></textarea>
+                <div class="ctools">
+                  <button class="ctool" data-demo="Attachments are visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></button>
+                  <button class="ctool" data-demo="Voice input is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+                  <button class="datasrc" data-demo="Data sources are visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>Data Source<svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="12" height="12"><path d="M6 9l6 6 6-6"/></svg></button>
+                  <button class="sendbtn" id="homeSend"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+                </div>
+              </div>
+              <div class="chips">
+                <button class="chip" data-thread="demo"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg>Create image</button>
+                <button class="chip" data-thread="demo"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Summarize text</button>
+                <button class="chip" data-thread="demo"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.7 1 1.5 1 2.5h6c0-1 .2-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg>Brainstorm ideas</button>
+                <button class="chip" data-thread="demo"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16M3 9h5M3 15h5"/></svg>Make a plan</button>
+                <button class="chip" data-thread="demo"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Help me write</button>
+              </div>
+              <div class="recent">
+                <h3>Your recent chats</h3>
+                <div class="rcards">
+                  <div class="rcard" data-thread="demo"><div class="t">Professional branding</div><div class="s">Branding is the full identity of a business, not just a logo or color palette...</div><div class="d">15 September</div></div>
+                  <div class="rcard" data-thread="demo"><div class="t">Branding guide example</div><div class="s">Creative services don't just make things look attractive, they shape perception...</div><div class="d">15 September</div></div>
+                  <div class="rcard" data-thread="demo"><div class="t">Brand activation ideas</div><div class="s">This blend of strategy and design turns ideas into memorable brand moments...</div><div class="d">15 September</div></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ======= CHAT ======= -->
+          <section class="view" id="view-chat">
+            <div class="chat">
+              <!-- Prebuilt demo thread (visual only) -->
+              <div id="thread-demo">
+                <div class="msg urow"><div class="ubub">could you share website performance for this month?</div></div>
+                <div class="msg airow"><span class="orb-mini"></span><div class="aibody">
+                  <p>Sure! Here's your website performance for last 30 days</p>
+                  <div class="metrics">
+                    <div class="metric"><div class="l">New Users</div><div class="vrow"><span class="v">12,450</span><span class="d">+15.7%</span></div></div>
+                    <div class="metric"><div class="l">Retention</div><div class="vrow"><span class="v">38%</span><span class="d">+6.2%</span></div></div>
+                    <div class="metric"><div class="l">Avg. Session</div><div class="vrow"><span class="v">3m10s</span><span class="d">+32.8%</span></div></div>
+                    <div class="metric"><div class="l">Bounce Rate</div><div class="vrow"><span class="v">47%</span><span class="d">-5.5%</span></div></div>
+                  </div>
+                  <p>Overall website performance has improved, with growth in new users, better retention, and stronger engagement metrics. These results suggest that recent design and content updates are resonating well with the audience, and continued optimization could further strengthen user loyalty.</p>
+                  <div class="hr"></div>
+                  <p>Would you like me to generate the data in csv file?</p>
+                  <div class="actions">
+                    <button data-demo="Regenerate is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg></button>
+                    <button data-demo="Copy is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+                    <button data-demo="Feedback is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3zm0 0l4-7a2 2 0 0 1 3.6 1.2V11H21a1 1 0 0 1 1 1.2l-1.5 6A2 2 0 0 1 18.5 20H7"/></svg></button>
+                    <button data-demo="Feedback is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M17 13V4h3a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-3zm0 0l-4 7a2 2 0 0 1-3.6-1.2V13H3a1 1 0 0 1-1-1.2l1.5-6A2 2 0 0 1 5.5 4H17"/></svg></button>
+                  </div>
+                </div></div>
+                <div class="msg urow"><div class="ubub">yes please</div></div>
+                <div class="msg airow"><span class="orb-mini"></span><div class="aibody" id="csvSlot">
+                  <div class="waitrow"><span>Creating CSV file, please wait...</span><svg class="spin" viewBox="0 0 24 24" fill="none" stroke="#5b8def" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg></div>
+                </div></div>
+                <div class="suggbar">
+                  <span class="sl"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg>Suggestion</span>
+                  <button class="sugg" data-demo="Suggestions are visual-only in this demo.">compare website performance</button>
+                  <button class="sugg" data-demo="Suggestions are visual-only in this demo.">generate performance report</button>
+                </div>
+                <div class="msg" style="margin-top:26px">
+                  <div class="attrow">
+                    <div class="thumb"><div class="codefake"></div><div class="fl">override-1.tsx</div></div>
+                    <div class="thumb"><div class="codefake"></div><div class="fl">override-2.tsx</div></div>
+                  </div>
+                  <div class="urow"><div class="ubub">could you create code override so I can add it like the attachment I sent you?</div></div>
+                </div>
+                <div class="msg airow"><span class="orb-mini"></span><div class="aibody" id="codeSlot">
+                  <div class="waitrow"><span>Generating code override, please wait...</span><svg class="spin" viewBox="0 0 24 24" fill="none" stroke="#5b8def" stroke-width="2"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg></div>
+                </div></div>
+              </div>
+              <!-- Live (typed) thread -->
+              <div id="thread-live"></div>
+              <div class="chatcomposer">
+                <div class="composer" style="margin-top:0">
+                  <textarea id="chatInput" rows="1" placeholder="Ask anything..."></textarea>
+                  <div class="ctools">
+                    <button class="ctool" data-demo="Attachments are visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></button>
+                    <button class="ctool" data-demo="Voice input is visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+                    <button class="datasrc" data-demo="Data sources are visual-only in this demo."><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>Data Source<svg viewBox="0 0 24 24" fill="none" stroke-width="2" width="12" height="12"><path d="M6 9l6 6 6-6"/></svg></button>
+                    <button class="sendbtn" id="chatSend"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ======= MODELS ======= -->
+          <section class="view" id="view-models">
+            <div class="models">
+              <h2>Models</h2>
+              <p class="msub">Load your own <b>.gguf</b> file and chat with it — LM Studio style, minus the 2&nbsp;GB download.<br><span style="font-size:12.5px">Visual demo: loading is simulated in your browser. Files never leave your device and no real inference runs.</span></p>
+              <div id="modelStage">
+                <div class="drop" id="dropZone">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
+                  <div class="dt">Drop your .gguf file here</div>
+                  <div class="ds">or click to browse your computer.<br>Try it with your own file — e.g. <b>mnai-nano-1-q8.gguf</b> (16&nbsp;MB).</div>
+                  <span class="browse">Browse files</span>
+                  <input type="file" id="ggufInput" accept=".gguf" style="display:none">
+                </div>
+              </div>
+              <div class="hint"><b>Why so small?</b> This whole app is a single HTML file — about <b>60&nbsp;KB</b>. No Electron, no 2&nbsp;GB runtime. Your GGUF stays on your disk; a future build can point the chat at a real local inference server.</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+  var $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+
+  var toastTimer = null;
+  function toast(msg){
+    var t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2400);
+  }
+
+  /* ---------- greeting ---------- */
+  var h = new Date().getHours();
+  var g = h < 12 ? "Good Morning" : (h < 17 ? "Good Afternoon" : "Good Evening");
+  $("#greetTitle").textContent = g + ", Sophia";
+
+  /* ---------- view switching ---------- */
+  var currentThread = "demo";
+  function showView(name){
+    $$(".view").forEach(function(v){ v.classList.remove("on"); });
+    $("#view-" + name).classList.add("on");
+    $("#views").scrollTop = 0;
+    $$("#navModels").forEach(function(){});
+    document.querySelectorAll(".sidebar .nav").forEach(function(n){ n.classList.remove("active"); });
+    if(name === "models") $("#navModels").classList.add("active");
+  }
+  function openThread(which){
+    currentThread = which;
+    $("#thread-demo").style.display = which === "demo" ? "" : "none";
+    $("#thread-live").style.display = which === "live" ? "" : "none";
+    showView("chat");
+    if(which === "demo") runDemoCompletions();
+  }
+
+  /* ---------- nav ---------- */
+  $$("[data-demo]").forEach(function(el){
+    el.addEventListener("click", function(e){ e.stopPropagation(); toast(el.getAttribute("data-demo")); });
+  });
+  $("#navModels").addEventListener("click", function(){ showView("models"); });
+  $("#newChatBtn").addEventListener("click", function(){
+    $("#thread-live").innerHTML = ""; currentThread = "live"; showView("home");
+  });
+  $$("[data-thread]").forEach(function(el){
+    el.addEventListener("click", function(){ openThread("demo"); });
+  });
+  $("#addFolder").addEventListener("click", function(){ toast("Folders are visual-only in this demo."); });
+  $("#shareBtn").addEventListener("click", function(){ toast("Demo link copied (not a real link)."); });
+
+  /* ---------- profile popover ---------- */
+  var pop = $("#profilePop");
+  $("#profileBtn").addEventListener("click", function(e){ e.stopPropagation(); pop.classList.toggle("open"); });
+  document.addEventListener("click", function(e){ if(!pop.contains(e.target)) pop.classList.remove("open"); });
+
+  /* ---------- model picker menu ---------- */
+  var menu = $("#modelMenu"), loadedModel = null;
+  $("#modelPickBtn").addEventListener("click", function(e){ e.stopPropagation(); menu.classList.toggle("open"); });
+  document.addEventListener("click", function(e){ if(!menu.contains(e.target)) menu.classList.remove("open"); });
+  $("#menuLoad").addEventListener("click", function(){ menu.classList.remove("open"); showView("models"); });
+  $("#menuDefault").addEventListener("click", function(){ menu.classList.remove("open"); });
+
+  /* ---------- demo thread completions (visual only) ---------- */
+  var demoRan = false;
+  function runDemoCompletions(){
+    if(demoRan) return; demoRan = true;
+    setTimeout(function(){
+      $("#csvSlot").innerHTML =
+        '<div class="filechip"><div class="fileic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>' +
+        '<div class="filemeta"><div class="fn">website-performance.csv</div><div class="fs">1.2 KB &middot; generated just now (demo)</div></div>' +
+        '<button class="dlbtn" id="csvDl">Download</button></div>';
+      $("#csvDl").addEventListener("click", function(){
+        var csv = "metric,value,change\nNew Users,12450,+15.7%\nRetention,38%,+6.2%\nAvg. Session,3m10s,+32.8%\nBounce Rate,47%,-5.5%\n";
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+        a.download = "website-performance.csv"; a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+        toast("CSV downloaded (demo data).");
+      });
+    }, 2600);
+    setTimeout(function(){
+      var code = [
+        'import type { ComponentType } from "react"',
+        'import { useState } from "react"',
+        'import { motion } from "framer-motion"',
+        '',
+        'export function withHoverGlow(Component: ComponentType): ComponentType {',
+        '    return (props: any) => {',
+        '        const [hover, setHover] = useState(false)',
+        '        return (',
+        '            <motion.div',
+        '                onHoverStart={() => setHover(true)}',
+        '                onHoverEnd={() => setHover(false)}',
+        '                animate={{ scale: hover ? 1.04 : 1 }}',
+        '                style={{',
+        '                    filter: hover',
+        '                        ? "drop-shadow(0 8px 24px rgba(139,92,240,.45))"',
+        '                        : "none",',
+        '                }}',
+        '            >',
+        '                <Component {...props} />',
+        '            </motion.div>',
+        '        )',
+        '    }',
+        '}'
+      ].join("\n");
+      var esc = code.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      $("#codeSlot").innerHTML =
+        '<p>Done! Here is your Framer code override — paste it into your project\'s code file:</p>' +
+        '<div class="codecard"><div class="codehead"><span class="fn">withHoverGlow.tsx</span>' +
+        '<button class="copybtn" id="codeCopy"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" width="13" height="13"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy</button></div>' +
+        '<pre><code>' + esc + '</code></pre></div>';
+      $("#codeCopy").addEventListener("click", function(){
+        if(navigator.clipboard) navigator.clipboard.writeText(code);
+        toast("Code copied (demo).");
+      });
+    }, 4200);
+  }
+
+  /* ---------- live chat (canned demo replies) ---------- */
+  var replies = [
+    "This is a visual demo of MN Studio, so no real model is running — but this is exactly the flow you'd see with your GGUF loaded.",
+    "Demo mode: message received loud and clear. Point the chat at a real inference backend to make me actually think.",
+    "Got it! In the full build, your GGUF's reply would stream in here token by token."
+  ];
+  var ri = 0;
+  function escHtml(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function scrollChat(){ var v = $("#views"); v.scrollTop = v.scrollHeight; }
+  function sendFrom(inputEl){
+    var text = inputEl.value.trim();
+    if(!text) return;
+    inputEl.value = ""; inputEl.style.height = "auto";
+    openThread("live");
+    var live = $("#thread-live");
+    var u = document.createElement("div");
+    u.className = "msg urow"; u.innerHTML = '<div class="ubub">' + escHtml(text) + "</div>";
+    live.appendChild(u); scrollChat();
+    var a = document.createElement("div");
+    a.className = "msg airow";
+    a.innerHTML = '<span class="orb-mini"></span><div class="aibody"><div class="typing"><span></span><span></span><span></span></div></div>';
+    live.appendChild(a); scrollChat();
+    setTimeout(function(){
+      a.querySelector(".aibody").innerHTML = "<p>" + escHtml(replies[ri % replies.length]) + "</p>";
+      ri++; scrollChat();
+    }, 1300);
+  }
+  function wireComposer(inputId, btnId){
+    var inp = document.getElementById(inputId);
+    document.getElementById(btnId).addEventListener("click", function(){ sendFrom(inp); });
+    inp.addEventListener("keydown", function(e){ if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendFrom(inp); } });
+    inp.addEventListener("input", function(){ inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, 140) + "px"; });
+  }
+  wireComposer("homeInput", "homeSend");
+  wireComposer("chatInput", "chatSend");
+
+  /* ---------- GGUF loader (simulated, visual only) ---------- */
+  var drop = $("#dropZone"), fileInput = $("#ggufInput"), stage = $("#modelStage");
+  drop.addEventListener("click", function(){ fileInput.click(); });
+  ["dragenter","dragover"].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("over"); }); });
+  ["dragleave","drop"].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("over"); }); });
+  drop.addEventListener("drop", function(e){ if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+  fileInput.addEventListener("change", function(){ if(fileInput.files.length) handleFile(fileInput.files[0]); fileInput.value = ""; });
+
+  function fmtBytes(b){
+    if(b < 1024) return b + " B";
+    if(b < 1048576) return (b/1024).toFixed(1) + " KB";
+    if(b < 1073741824) return (b/1048576).toFixed(1) + " MB";
+    return (b/1073741824).toFixed(2) + " GB";
+  }
+  function handleFile(f){
+    if(!/\.gguf$/i.test(f.name)){ toast("Please choose a .gguf file (demo)."); return; }
+    stage.innerHTML =
+      '<div class="loadwrap"><div class="lt">Loading ' + escHtml(f.name) + '</div>' +
+      '<div class="ls">Reading model into memory… (simulated, demo only)</div>' +
+      '<div class="pbar"><i id="pfill"></i></div><div class="ppct" id="ppct">0%</div></div>';
+    var p = 0, fill = $("#pfill"), pct = $("#ppct");
+    var timer = setInterval(function(){
+      p = Math.min(100, p + Math.random() * 16 + 4);
+      fill.style.width = p + "%"; pct.textContent = Math.floor(p) + "%";
+      if(p >= 100){ clearInterval(timer); setTimeout(function(){ showLoaded(f); }, 350); }
+    }, 160);
+  }
+  function showLoaded(f){
+    loadedModel = f.name;
+    $("#modelPickLabel").textContent = f.name;
+    $("#menuModelName").textContent = f.name;
+    stage.innerHTML =
+      '<div class="modelcard"><div class="mrow"><div class="cpuic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9zM4 10h-2M4 14h-2M22 10h-2M22 14h-2M10 4V2M14 4V2M10 22v-2M14 22v-2"/></svg></div>' +
+      '<div><div class="mname">' + escHtml(f.name) + '</div><div class="mmeta">' + fmtBytes(f.size) + ' &middot; GGUF &middot; status: loaded (demo)</div></div></div>' +
+      '<div class="mnote"><b>Demo build:</b> this file was only read for its name and size — it never left your device and no real inference is running. In the full build this is where the model would become chat-ready.</div>' +
+      '<div class="mbtns"><button class="btnpri" id="startChat">Start chatting</button><button class="btnghost" id="unload">Unload</button></div></div>';
+    $("#startChat").addEventListener("click", function(){
+      $("#thread-live").innerHTML = ""; openThread("live");
+      toast("Chatting with " + f.name + " (demo replies).");
+    });
+    $("#unload").addEventListener("click", function(){ location.reload(); });
+    toast("Model loaded (demo).");
+  }
+})();
+</script>
+</body>
+</html>
